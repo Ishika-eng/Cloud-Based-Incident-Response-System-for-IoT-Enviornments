@@ -9,12 +9,13 @@ const SecurityEngine = require('./SecurityEngine');
 const engine = new SecurityEngine();
 
 // Helper: Sends a packet to the engine and logs any alerts
-const sendPacket = (deviceId, type, loginStatus) => {
+const sendPacket = (deviceId, type, loginStatus, authHeader) => {
     const telemetry = {
         deviceId,
         data: {
             type,
             loginStatus,
+            authHeader,
             timestamp: new Date().toISOString()
         }
     };
@@ -35,13 +36,13 @@ const sendPacket = (deviceId, type, loginStatus) => {
 // --- SCENARIO 1: Brute Force Attack ---
 console.log("--- Starting Brute Force Simulation (6 Failed Attempts) ---");
 for (let i = 1; i <= 6; i++) {
-    sendPacket('ESP32-BF-TEST', 'login', 'FAIL');
+    sendPacket('ESP32-BF-TEST', 'login', 'FAIL', 'Bearer-Valid-Token');
 }
 
 // --- SCENARIO 2: DDoS Attack ---
 console.log("\n--- Starting DDoS Simulation (25 Fast Packets) ---");
 for (let i = 1; i <= 25; i++) {
-    sendPacket('ESP32-DDOS-TEST', 'heartbeat', 'SUCCESS');
+    sendPacket('ESP32-DDOS-TEST', 'heartbeat', 'SUCCESS', 'Bearer-Valid-Token');
 }
 
 // --- SCENARIO 3: Normal Traffic ---

@@ -63,6 +63,17 @@ class SecurityEngine {
                 `High traffic detected: ${session.packetTimestamps.length} packets in ${this.WINDOW_MS / 1000}s.`);
         }
 
+        // 4. UNAUTHORIZED ACCESS DETECTION LOGIC
+        // We check if the authHeader is present and valid (simulated)
+        const { authHeader } = data;
+
+        // Logic: In a real app, you'd verify a JWT here. 
+        // For our simulator, if the header is missing or says "EXPIRED", we block.
+        if (!authHeader || authHeader === 'EXPIRED') {
+            return this.triggerAlert(deviceId, 'Unauthorized Access', 'Medium',
+                `Access denied: Invalid or missing authentication token.`);
+        }
+
         return null; // No threat detected
     }
 
