@@ -1,0 +1,17 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npm start"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+[env]
+NODE_ENV = "production"
+
+[[services]]
+name = "iot-backend"
+source = "."
+[services.variables]
+NODE_ENV = "production"
+PORT = "5000"

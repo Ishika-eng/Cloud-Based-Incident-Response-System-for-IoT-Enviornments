@@ -1,0 +1,11 @@
+{
+  "deviceId": "TEST-DEVICE-003", 
+  "timestamp": "2024-03-05T22:52:00Z",
+  "type": "heartbeat",
+  "data": {
+    "cpuUsage": 25.5,
+    "ramUsage": 65.2,
+    "loginStatus": "SUCCESS",
+    "packetFrequency": 500
+  }
+}
