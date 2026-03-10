@@ -1,0 +1,7 @@
+{
+  "deviceId": "TEST-DEVICE-003",
+  "name": "Test Device 3",
+  "type": "sensor",
+  "ipAddress": "192.168.1.103",
+  "location": "Kitchen"
+}
