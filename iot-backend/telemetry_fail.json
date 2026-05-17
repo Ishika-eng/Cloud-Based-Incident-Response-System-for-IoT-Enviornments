@@ -1,0 +1,11 @@
+{
+  "deviceId": "TEST-DEVICE-003",
+  "timestamp": "2024-03-05T22:51:00Z",
+  "type": "login",
+  "data": {
+    "cpuUsage": 15.2,
+    "ramUsage": 48.7,
+    "loginStatus": "FAIL",
+    "packetFrequency": 2
+  }
+}

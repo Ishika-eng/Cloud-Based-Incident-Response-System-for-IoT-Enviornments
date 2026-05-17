@@ -1,0 +1,12 @@
+{
+  "deviceId": "TEST-SCHEMA-001",
+  "timestamp": "2024-03-05T22:50:00Z",
+  "type": "login",
+  "data": {
+    "cpuUsage": 15.2,
+    "ramUsage": 48.7,
+    "loginStatus": "FAIL",
+    "packetFrequency": 1,
+    "authHeader": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+  }
+}

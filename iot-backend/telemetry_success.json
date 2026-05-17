@@ -1,0 +1,11 @@
+{
+  "deviceId": "765fa92b-806b-4ca3-bddc-8e276450a628",
+  "timestamp": "2024-03-05T22:50:00Z",
+  "type": "heartbeat",
+  "data": {
+    "cpuUsage": 12.5,
+    "ramUsage": 45.2,
+    "loginStatus": "SUCCESS",
+    "packetFrequency": 1
+  }
+}
