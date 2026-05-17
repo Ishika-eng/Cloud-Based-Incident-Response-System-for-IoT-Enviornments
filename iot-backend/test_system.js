@@ -8,7 +8,7 @@ async function testSystem() {
     console.log('\n1. Registering device...');
     const regResponse = await axios.post('http://localhost:5000/api/auth/register', {
       deviceId: `SYSTEM-TEST-${Date.now()}`,
-      name: 'System Test Device',
+      name: `System Test Device ${Date.now()}`,
       type: 'sensor',
       ipAddress: `192.168.1.${Math.floor(Math.random() * 255)}`,
       location: 'Test Lab'

@@ -5,7 +5,8 @@ const incidentSchema = new mongoose.Schema({
   incidentId: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    default: function() { return `ALT-${Math.floor(Math.random() * 10000)}`; }
   },
   deviceId: {
     type: String,
@@ -35,13 +36,8 @@ incidentSchema.index({ deviceId: 1 });
 incidentSchema.index({ type: 1 });
 incidentSchema.index({ severity: 1 });
 incidentSchema.index({ timestamp: -1 });
-incidentSchema.index({ incidentId: 1 }, { unique: true });
 
-incidentSchema.pre('save', function(next) {
-  if (!this.incidentId) {
-    this.incidentId = `ALT-${Math.floor(Math.random() * 10000)}`;
-  }
-  next();
-});
+
+
 
 module.exports = mongoose.model('Incident', incidentSchema);

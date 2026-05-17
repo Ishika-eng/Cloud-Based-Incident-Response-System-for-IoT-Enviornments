@@ -220,7 +220,6 @@ router.post('/', auth, async (req, res) => {
         threatType: inc.type,
         severity: inc.severity,
         timestamp: inc.timestamp,
-        details: threat.details,
         status: 'Active'
       }))
     });
@@ -235,13 +234,12 @@ router.get('/incidents', auth, async (req, res) => {
   try {
     const incidents = await Incident.find({})
       .sort({ timestamp: -1 })
-      .limit(50)
-      .populate('deviceId', 'name type ipAddress location');
+      .limit(50);
     
     res.json({
       incidents: incidents.map(incident => ({
         incidentId: incident.incidentId,
-        deviceId: incident.deviceId._id,
+        deviceId: incident.deviceId,
         type: incident.type,
         severity: incident.severity,
         timestamp: incident.timestamp

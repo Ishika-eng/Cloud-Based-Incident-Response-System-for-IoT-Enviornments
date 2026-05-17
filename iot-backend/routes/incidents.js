@@ -21,13 +21,12 @@ router.get('/', auth, async (req, res) => {
     
     const incidents = await Incident.find(filter)
       .sort({ timestamp: -1 })
-      .limit(parseInt(limit))
-      .populate('deviceId', 'name type ipAddress location');
+      .limit(parseInt(limit));
     
     res.json({
       incidents: incidents.map(incident => ({
         incidentId: incident.incidentId,
-        deviceId: incident.deviceId._id || incident.deviceId,
+        deviceId: incident.deviceId,
         type: incident.type,
         severity: incident.severity,
         timestamp: incident.timestamp

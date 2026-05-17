@@ -109,7 +109,13 @@ export const getHealth = async () => {
 // ─── Authentication (user login — mock only) ──────────────────────────────────
 export const login = async (email, password) => {
     if (USE_REAL_API) {
-        return api.post('/api/auth/login', { email, password });
+        // The real backend only authenticates devices, not users.
+        // We bypass the email/password and just register the dashboard.
+        const token = await initDashboard();
+        if (token) {
+            return { data: { user: { name: 'Admin', email }, token } };
+        }
+        throw new Error('Backend connection failed.');
     }
     await delay(800);
     const user = mockUsers.find((u) => u.email === email);

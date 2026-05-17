@@ -13,7 +13,7 @@ class SecurityEngine {
 
   async analyzeTelemetry(telemetry, device) {
     const threats = [];
-    const { cpuUsage, ramUsage, loginStatus, packetFrequency, authHeader } = telemetry.data;
+    const { cpu: cpuUsage, memory: ramUsage, loginStatus, traffic: packetFrequency, authHeader } = telemetry;
     
     // DDoS Detection
     if (packetFrequency > this.threatThresholds.ddos) {
