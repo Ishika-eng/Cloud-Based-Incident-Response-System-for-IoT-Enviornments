@@ -106,22 +106,31 @@ export const getHealth = async () => {
     }
 };
 
-// ─── Authentication (user login — mock only) ──────────────────────────────────
+// ─── Authentication (user login) ─────────────────────────────────────────────
+const VALID_CREDENTIALS = [
+    { email: 'admin@gmail.com', password: 'admin123', name: 'Admin', role: 'admin' },
+];
+
 export const login = async (email, password) => {
+    // Always validate credentials first, regardless of API mode
+    const match = VALID_CREDENTIALS.find(
+        (c) => c.email === email && c.password === password
+    );
+    if (!match) {
+        await delay(400); // small delay to prevent brute-force timing
+        throw new Error('Invalid email or password');
+    }
+
     if (USE_REAL_API) {
-        // The real backend only authenticates devices, not users.
-        // We bypass the email/password and just register the dashboard.
+        // Credentials valid — now get a backend device token for API calls
         const token = await initDashboard();
         if (token) {
-            return { data: { user: { name: 'Admin', email }, token } };
+            return { data: { user: { name: match.name, email: match.email, role: match.role }, token } };
         }
         throw new Error('Backend connection failed.');
     }
     await delay(800);
-    const user = mockUsers.find((u) => u.email === email);
-    if (user && (password === 'admin123' || password === 'viewer123')) {
-        return { data: { user, token: 'mock-jwt-token-xyz-123' } };
-    }
+    return { data: { user: { name: match.name, email: match.email, role: match.role }, token: 'mock-jwt-token-xyz-123' } };
     throw new Error('Invalid credentials');
 };
 

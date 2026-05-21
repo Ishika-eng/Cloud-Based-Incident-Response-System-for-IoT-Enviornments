@@ -80,8 +80,7 @@ export const mockIncidents = [
 ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
 export const mockUsers = [
-    { id: 'u1', email: 'admin@sentineliq.io', name: 'Alex Morgan', role: 'admin' },
-    { id: 'u2', email: 'viewer@sentineliq.io', name: 'Sam Chen', role: 'viewer' }
+    { id: 'u1', email: 'admin@gmail.com', name: 'Admin', role: 'admin' },
 ];
 
 export const mockSettings = {

@@ -46,7 +46,7 @@ const LoginForm = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full h-8 px-3 bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-[6px] text-13px text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-accent)] transition-colors"
                     required
-                    placeholder="admin@sentineliq.io"
+                    placeholder="admin@gmail.com"
                 />
             </div>
 
