@@ -8,7 +8,7 @@ const createRateLimiter = (windowMs, max, message) => {
     standardHeaders: true,
     legacyHeaders: false,
     handler: (req, res) => {
-      res.status(429).json({ 
+      res.status(429).json({
         error: message || 'Too many requests, please try again later.',
         retryAfter: Math.round(windowMs / 1000)
       });
@@ -24,7 +24,7 @@ const telemetryLimiter = createRateLimiter(
 
 const authLimiter = createRateLimiter(
   15 * 60 * 1000,
-  5,
+  100,
   'Too many authentication attempts, please try again later.'
 );
 

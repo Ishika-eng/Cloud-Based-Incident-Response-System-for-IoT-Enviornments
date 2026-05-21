@@ -9,7 +9,7 @@ const router = express.Router();
 
 const parseTelemetry = (req) => {
   const body = req.body;
-  
+
   if (body.data && body.deviceId && body.timestamp && body.type) {
     const standardized = {
       deviceId: body.deviceId,
@@ -19,9 +19,10 @@ const parseTelemetry = (req) => {
       memory: body.data.ramUsage,
       traffic: body.data.packetFrequency,
       loginStatus: body.data.loginStatus,
-      authHeader: body.data.authHeader
+      authHeader: body.data.authHeader,
+      sensorData: body.data.sensorData || {}
     };
-    
+
     if (standardized.loginStatus === 'FAIL') {
       standardized.loginAttempts = 1;
     } else if (standardized.loginStatus === 'SUCCESS') {
@@ -29,7 +30,7 @@ const parseTelemetry = (req) => {
     } else {
       standardized.loginAttempts = 0;
     }
-    
+
     return { telemetry: standardized, isStandardFormat: true };
   } else {
     return { telemetry: body, isStandardFormat: false };
@@ -38,7 +39,7 @@ const parseTelemetry = (req) => {
 
 const validateStandardTelemetry = (body) => {
   const errors = [];
-  
+
   if (!body.deviceId) errors.push('deviceId is required');
   if (!body.timestamp) errors.push('timestamp is required');
   if (!body.type) errors.push('type is required');
@@ -46,7 +47,7 @@ const validateStandardTelemetry = (body) => {
     errors.push('type must be heartbeat, login, or traffic_spike');
   }
   if (!body.data) errors.push('data object is required');
-  
+
   if (body.data) {
     if (body.data.cpuUsage === undefined) errors.push('data.cpuUsage is required');
     if (body.data.ramUsage === undefined) errors.push('data.ramUsage is required');
@@ -61,8 +62,13 @@ const validateStandardTelemetry = (body) => {
         errors.push('data.authHeader must start with "Bearer "');
       }
     }
+    if (body.data.sensorData) {
+      if (typeof body.data.sensorData !== 'object') {
+        errors.push('data.sensorData must be an object');
+      }
+    }
   }
-  
+
   return errors;
 };
 
@@ -70,75 +76,76 @@ router.post('/', auth, async (req, res) => {
   try {
     const body = req.body;
     const device = req.device;
-    
+
     const { telemetry, isStandardFormat } = parseTelemetry(req);
-    
+
     if (isStandardFormat) {
       const validationErrors = validateStandardTelemetry(body);
       if (validationErrors.length > 0) {
-        return res.status(400).json({ 
-          error: 'Standard telemetry validation failed', 
-          details: validationErrors 
+        return res.status(400).json({
+          error: 'Standard telemetry validation failed',
+          details: validationErrors
         });
       }
     }
-    
+
     const validationErrors = [];
-    
+
     if (telemetry.cpu !== undefined) {
       if (typeof telemetry.cpu !== 'number' || telemetry.cpu < 0 || telemetry.cpu > 100) {
         validationErrors.push('CPU usage must be a number between 0 and 100');
       }
     }
-    
+
     if (telemetry.memory !== undefined) {
       if (typeof telemetry.memory !== 'number' || telemetry.memory < 0 || telemetry.memory > 100) {
         validationErrors.push('Memory usage must be a number between 0 and 100');
       }
     }
-    
+
     if (telemetry.traffic !== undefined) {
       if (typeof telemetry.traffic !== 'number' || telemetry.traffic < 0) {
         validationErrors.push('Traffic must be a non-negative number');
       }
     }
-    
+
     if (telemetry.loginAttempts !== undefined) {
       if (typeof telemetry.loginAttempts !== 'number' || telemetry.loginAttempts < 0) {
         validationErrors.push('Login attempts must be a non-negative number');
       }
     }
-    
+
     if (validationErrors.length > 0) {
-      return res.status(400).json({ 
-        error: 'Validation failed', 
-        details: validationErrors 
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: validationErrors
       });
     }
-    
-    device.lastSeen = new Date();
-    await device.save();
-    
+
+    // Update device lastSeen, handling concurrency
+    await Device.findByIdAndUpdate(device._id, { lastSeen: new Date() });
+
     const threats = await new SecurityEngine().analyzeTelemetry(telemetry, device);
-    
+
     const incidents = [];
     let deviceCompromised = false;
-    
+
     for (const threat of threats) {
       const incident = new Incident({
         deviceId: device._id,
         type: threat.type,
         severity: threat.severity,
+        details: threat.details,
         timestamp: new Date()
       });
-      
+
       await incident.save();
       incidents.push(incident);
-      
+
       if (threat.severity === 'Critical') {
         deviceCompromised = true;
       }
-      
+
       if (global.io) {
         global.io.emit('threat-detected', {
           alertId: incident.incidentId,
@@ -151,32 +158,36 @@ router.post('/', auth, async (req, res) => {
         });
       }
     }
-    
+
     if (deviceCompromised) {
-      device.status = 'Blocked';
-      await device.save();
-      
+      // Use findByIdAndUpdate to avoid VersionError during high-frequency telemetry
+      const updatedDevice = await Device.findByIdAndUpdate(
+        device._id, 
+        { status: 'Blocked' },
+        { new: true }
+      );
+
       if (global.io) {
         global.io.emit('device-compromised', {
-          alertId: `ALT-${device._id.toString().slice(-4)}`,
-          deviceId: device._id,
+          alertId: `ALT-${updatedDevice._id.toString().slice(-4)}`,
+          deviceId: updatedDevice._id,
           threatType: 'System Compromised',
           severity: 'Critical',
           timestamp: new Date(),
           details: 'Device status changed to Blocked due to critical threats',
           status: 'Blocked',
           device: {
-            id: device._id,
-            name: device.name,
-            type: device.type,
-            ipAddress: device.ipAddress,
-            location: device.location,
-            status: device.status
+            id: updatedDevice._id,
+            name: updatedDevice.name,
+            type: updatedDevice.type,
+            ipAddress: updatedDevice.ipAddress,
+            location: updatedDevice.location,
+            status: updatedDevice.status
           }
         });
       }
     }
-    
+
     if (global.io) {
       global.io.emit('live-telemetry', {
         deviceId: device._id,
@@ -198,17 +209,17 @@ router.post('/', auth, async (req, res) => {
           location: device.location
         },
         incidents: incidents.map(inc => ({
-          alertId: `ALT-${inc._id.toString().slice(-4)}`,
+          alertId: inc.incidentId,
           deviceId: inc.deviceId,
-          threatType: inc.attackType,
+          threatType: inc.type,
           severity: inc.severity,
-          timestamp: inc.createdAt,
+          timestamp: inc.timestamp,
           details: inc.details,
           status: 'Active'
         }))
       });
     }
-    
+
     res.json({
       success: true,
       deviceStatus: device.status,
@@ -220,13 +231,17 @@ router.post('/', auth, async (req, res) => {
         threatType: inc.type,
         severity: inc.severity,
         timestamp: inc.timestamp,
+        details: inc.details,
         status: 'Active'
       }))
     });
-    
+
   } catch (error) {
-    console.error('Telemetry processing error:', error);
-    res.status(500).json({ error: 'Server error processing telemetry' });
+    console.error('Telemetry processing error details:', error);
+    res.status(500).json({ 
+      error: 'Server error processing telemetry',
+      details: error.message 
+    });
   }
 });
 
@@ -235,7 +250,6 @@ router.get('/incidents', auth, async (req, res) => {
     const incidents = await Incident.find({})
       .sort({ timestamp: -1 })
       .limit(50);
-    
     res.json({
       incidents: incidents.map(incident => ({
         incidentId: incident.incidentId,
@@ -245,7 +259,7 @@ router.get('/incidents', auth, async (req, res) => {
         timestamp: incident.timestamp
       }))
     });
-    
+
   } catch (error) {
     console.error('Incidents retrieval error:', error);
     res.status(500).json({ error: 'Server error retrieving incidents' });
@@ -256,21 +270,21 @@ router.patch('/incidents/:id/resolve', auth, async (req, res) => {
   try {
     const { id } = req.params;
     const { resolution } = req.body;
-    
+
     const incident = await Incident.findById(id);
-    
+
     if (!incident) {
       return res.status(404).json({ error: 'Incident not found' });
     }
-    
+
     incident.resolved = true;
     incident.resolvedAt = new Date();
     if (resolution) {
       incident.details += ` | Resolution: ${resolution}`;
     }
-    
+
     await incident.save();
-    
+
     if (global.io) {
       global.io.emit('incident-resolved', {
         incident: {
@@ -282,7 +296,7 @@ router.patch('/incidents/:id/resolve', auth, async (req, res) => {
         }
       });
     }
-    
+
     res.json({
       success: true,
       incident: {
@@ -291,7 +305,7 @@ router.patch('/incidents/:id/resolve', auth, async (req, res) => {
         resolvedAt: incident.resolvedAt
       }
     });
-    
+
   } catch (error) {
     console.error('Incident resolution error:', error);
     res.status(500).json({ error: 'Server error resolving incident' });
@@ -301,18 +315,18 @@ router.patch('/incidents/:id/resolve', auth, async (req, res) => {
 router.get('/status', auth, async (req, res) => {
   try {
     const device = req.device;
-    
+
     const unresolvedIncidents = await Incident.countDocuments({
       deviceId: device._id,
       resolved: false
     });
-    
+
     const recentIncidents = await Incident.find({
       deviceId: device._id
     })
-    .sort({ createdAt: -1 })
-    .limit(5);
-    
+      .sort({ createdAt: -1 })
+      .limit(5);
+
     res.json({
       device: {
         id: device._id,
@@ -337,7 +351,7 @@ router.get('/status', auth, async (req, res) => {
         createdAt: inc.createdAt
       }))
     });
-    
+
   } catch (error) {
     console.error('Device status retrieval error:', error);
     res.status(500).json({ error: 'Server error retrieving device status' });

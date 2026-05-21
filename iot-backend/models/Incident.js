@@ -6,7 +6,7 @@ const incidentSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    default: function() { return `ALT-${Math.floor(Math.random() * 10000)}`; }
+    default: () => `ALT-${uuidv4().slice(0, 8)}`
   },
   deviceId: {
     type: String,
@@ -16,7 +16,7 @@ const incidentSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['DDoS', 'Brute Force', 'Anomaly', 'Unauthorized', 'Unknown']
+    enum: ['DDoS', 'Brute Force', 'Anomaly', 'Unauthorized', 'Rogue Device', 'Unknown']
   },
   severity: {
     type: String,
@@ -27,6 +27,10 @@ const incidentSchema = new mongoose.Schema({
     type: Date,
     required: true,
     default: Date.now
+  },
+  details: {
+    type: String,
+    required: false
   }
 }, {
   timestamps: true
@@ -36,8 +40,5 @@ incidentSchema.index({ deviceId: 1 });
 incidentSchema.index({ type: 1 });
 incidentSchema.index({ severity: 1 });
 incidentSchema.index({ timestamp: -1 });
-
-
-
 
 module.exports = mongoose.model('Incident', incidentSchema);

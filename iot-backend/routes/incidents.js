@@ -29,7 +29,8 @@ router.get('/', auth, async (req, res) => {
         deviceId: incident.deviceId,
         type: incident.type,
         severity: incident.severity,
-        timestamp: incident.timestamp
+        timestamp: incident.timestamp,
+        details: incident.details || ''
       }))
     });
     

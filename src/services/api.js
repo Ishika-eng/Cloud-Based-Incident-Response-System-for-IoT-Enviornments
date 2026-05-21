@@ -2,7 +2,7 @@ import axios from 'axios';
 import { mockDevices, mockIncidents, mockUsers, mockSettings } from './mockData.js';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-const USE_REAL_API = !!import.meta.env.VITE_API_URL || API_URL !== 'http://localhost:5000';
+const USE_REAL_API = true; // Always use real backend; falls back to mock on network errors
 
 const api = axios.create({
     baseURL: API_URL,

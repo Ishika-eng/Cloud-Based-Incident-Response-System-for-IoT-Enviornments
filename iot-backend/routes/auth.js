@@ -26,8 +26,25 @@ router.post('/register', authLimiter, async (req, res) => {
     });
     
     if (existingDevice) {
-      return res.status(409).json({ 
-        error: 'Device with this name or IP address already exists' 
+      console.log(`ℹ️ Device ${name} already exists. Returning existing credentials.`);
+      const token = jwt.sign(
+        { id: existingDevice._id, type: existingDevice.type },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+      
+      return res.status(200).json({ 
+        message: 'Device already exists. Logged in successfully.',
+        deviceId: existingDevice._id,
+        token,
+        device: {
+          id: existingDevice._id,
+          name: existingDevice.name,
+          type: existingDevice.type,
+          status: existingDevice.status,
+          ipAddress: existingDevice.ipAddress,
+          location: existingDevice.location
+        }
       });
     }
     
