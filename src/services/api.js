@@ -282,40 +282,147 @@ export const acknowledgeIncident = async (id) => {
 };
 
 // ─── Analytics ────────────────────────────────────────────────────────────────
+
+// Helper: fetch up to 500 incidents for client-side analytics aggregation
+const fetchAllIncidents = async () => {
+    try {
+        const res = await api.get('/api/incidents', { params: { limit: 500 } });
+        const incidents = (res.data.incidents || res.data || []).map(normalizeIncident);
+        return { data: incidents };
+    } catch {
+        return { data: mockIncidents };
+    }
+};
+
+// Helper: JS getDay() → 0=Sun … 6=Sat; convert to Mon-based index (0=Mon … 6=Sun)
+const toMondayIndex = (date) => (date.getDay() + 6) % 7;
+
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const formatHour = (h) => {
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${String(h12).padStart(2, '0')}:00 ${suffix}`;
+};
+
 export const getAnalytics = async (range = '7d') => {
-    await delay();
-    return {
-        data: {
-            mostActiveHour: '03:00 AM',
-            mostTargetedDevice: 'NODE-EDGE-14',
-            peakAttackDay: 'Tuesday',
-            totalAttacks: 2841,
-        },
-    };
+    try {
+        const [incRes, devRes] = await Promise.all([fetchAllIncidents(), getDevices()]);
+        const incidents = incRes.data;
+        const devices = devRes.data;
+
+        if (!incidents.length) throw new Error('no data');
+
+        // Build deviceId → name map
+        const deviceMap = {};
+        devices.forEach((d) => { deviceMap[d.id] = d.name; });
+
+        const hourCounts = Array(24).fill(0);
+        const dayCounts = Array(7).fill(0);
+        const deviceCounts = {};
+
+        incidents.forEach((inc) => {
+            const d = new Date(inc.timestamp);
+            hourCounts[d.getHours()]++;
+            dayCounts[toMondayIndex(d)]++;
+            const name = deviceMap[inc.deviceId] || inc.deviceId;
+            deviceCounts[name] = (deviceCounts[name] || 0) + 1;
+        });
+
+        const mostActiveHour = formatHour(hourCounts.indexOf(Math.max(...hourCounts)));
+        const peakAttackDay = DAY_NAMES[dayCounts.indexOf(Math.max(...dayCounts))];
+        const mostTargetedDevice = Object.entries(deviceCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
+
+        return {
+            data: {
+                mostActiveHour,
+                mostTargetedDevice,
+                peakAttackDay,
+                totalAttacks: incidents.length,
+            },
+        };
+    } catch {
+        return {
+            data: {
+                mostActiveHour: '03:00 AM',
+                mostTargetedDevice: 'NODE-EDGE-14',
+                peakAttackDay: 'Tuesday',
+                totalAttacks: mockIncidents.length,
+            },
+        };
+    }
 };
 
 export const getAttackHeatmap = async (range = '7d') => {
-    await delay();
-    const heatmap = [];
-    for (let day = 0; day < 7; day++) {
-        for (let hour = 0; hour < 24; hour++) {
-            heatmap.push({ day, hour, count: Math.floor(Math.pow(Math.random(), 3) * 15) });
+    try {
+        const incRes = await fetchAllIncidents();
+        const incidents = incRes.data;
+
+        if (!incidents.length) throw new Error('no data');
+
+        // Build a flat list of { day, hour, count } entries
+        const grid = {};
+        incidents.forEach((inc) => {
+            const d = new Date(inc.timestamp);
+            const day = toMondayIndex(d);
+            const hour = d.getHours();
+            const key = `${day}-${hour}`;
+            grid[key] = (grid[key] || 0) + 1;
+        });
+
+        const heatmap = [];
+        for (let day = 0; day < 7; day++) {
+            for (let hour = 0; hour < 24; hour++) {
+                heatmap.push({ day, hour, count: grid[`${day}-${hour}`] || 0 });
+            }
         }
+        return { data: heatmap };
+    } catch {
+        // Fallback: deterministic-looking zeros (no random flicker on reload)
+        const heatmap = [];
+        for (let day = 0; day < 7; day++) {
+            for (let hour = 0; hour < 24; hour++) {
+                heatmap.push({ day, hour, count: 0 });
+            }
+        }
+        return { data: heatmap };
     }
-    return { data: heatmap };
 };
 
 export const getTopTargets = async (range = '7d') => {
-    await delay();
-    return {
-        data: [
-            { name: 'FIREWALL-DMZ-1', count: 110 },
-            { name: 'JETSON-CAM-02', count: 45 },
-            { name: 'NODE-EDGE-14', count: 38 },
-            { name: 'CAM-EXIT-S2', count: 22 },
-            { name: 'PI-LOGGER-09', count: 14 },
-        ],
-    };
+    try {
+        const [incRes, devRes] = await Promise.all([fetchAllIncidents(), getDevices()]);
+        const incidents = incRes.data;
+        const devices = devRes.data;
+
+        if (!incidents.length) throw new Error('no data');
+
+        const deviceMap = {};
+        devices.forEach((d) => { deviceMap[d.id] = d.name; });
+
+        const counts = {};
+        incidents.forEach((inc) => {
+            const name = deviceMap[inc.deviceId] || inc.deviceId;
+            counts[name] = (counts[name] || 0) + 1;
+        });
+
+        const sorted = Object.entries(counts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+        return { data: sorted };
+    } catch {
+        return {
+            data: [
+                { name: 'FIREWALL-DMZ-1', count: 110 },
+                { name: 'JETSON-CAM-02', count: 45 },
+                { name: 'NODE-EDGE-14', count: 38 },
+                { name: 'CAM-EXIT-S2', count: 22 },
+                { name: 'PI-LOGGER-09', count: 14 },
+            ],
+        };
+    }
 };
 
 // ─── Settings ─────────────────────────────────────────────────────────────────

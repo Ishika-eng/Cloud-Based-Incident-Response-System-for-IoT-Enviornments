@@ -116,12 +116,16 @@ class SecurityEngine {
     const state     = deviceKey ? (this.deviceStateCache.get(deviceKey) || {}) : {};
 
     // ── 1. Rogue Device Detection (Identity Check) ───────────────────────
-    if (providedId && device && providedId !== device._id.toString()) {
-      threats.push({
-        type:     'Rogue Device',
-        severity: 'Critical',
-        details:  `Identity mismatch: Provided ID ${providedId} does not match registered device ${device._id}`
-      });
+    // Accept either the device UUID or the device name as valid identity
+    if (providedId && device) {
+      const validIds = [device._id.toString(), device.name];
+      if (!validIds.includes(providedId)) {
+        threats.push({
+          type:     'Rogue Device',
+          severity: 'Critical',
+          details:  `Identity mismatch: Provided ID "${providedId}" does not match registered device "${device.name}" (${device._id})`
+        });
+      }
     }
 
     // ── 2. DDoS Detection (Adaptive) ────────────────────────────────────
@@ -137,14 +141,8 @@ class SecurityEngine {
           });
         }
       } else {
-        // Fallback: static threshold while calibrating
-        if (traffic > this.threatThresholds.ddos) {
-          threats.push({
-            type:     'DDoS',
-            severity: 'High',
-            details:  `High traffic: ${traffic} pkt/s exceeds static threshold of ${this.threatThresholds.ddos} pkt/s [Calibrating baseline: ${state.baselines?.traffic?.samples?.length || 0}/${CALIBRATION_SAMPLES} packets]`
-          });
-        }
+        // Still calibrating — collect samples silently.
+        // No alerts during calibration to avoid false positives on new devices.
       }
     }
 
@@ -243,14 +241,7 @@ class SecurityEngine {
           });
         }
       } else {
-        // Fallback: static threshold while calibrating
-        if (cpu > this.threatThresholds.cpuThreshold) {
-          threats.push({
-            type:     'Anomaly',
-            severity: 'Medium',
-            details:  `CPU anomaly: Usage at ${cpu}% exceeds static threshold of ${this.threatThresholds.cpuThreshold}% [Calibrating baseline: ${state.baselines?.cpu?.samples?.length || 0}/${CALIBRATION_SAMPLES}]`
-          });
-        }
+        // Still calibrating — collect samples silently.
       }
     }
 
@@ -266,13 +257,7 @@ class SecurityEngine {
           });
         }
       } else {
-        if (memory > this.threatThresholds.memoryThreshold) {
-          threats.push({
-            type:     'Anomaly',
-            severity: 'Low',
-            details:  `Memory anomaly: Usage at ${memory}% exceeds static threshold of ${this.threatThresholds.memoryThreshold}% [Calibrating baseline: ${state.baselines?.memory?.samples?.length || 0}/${CALIBRATION_SAMPLES}]`
-          });
-        }
+        // Still calibrating — collect samples silently.
       }
     }
 

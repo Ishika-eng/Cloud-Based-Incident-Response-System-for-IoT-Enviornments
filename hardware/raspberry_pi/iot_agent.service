@@ -1,0 +1,25 @@
+[Unit]
+Description=IoT Incident Response Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/iot_agent
+ExecStart=/usr/bin/python3 /home/pi/iot_agent/iot_agent.py
+Restart=always
+RestartSec=10
+
+# Environment variables — edit these per device
+Environment="BACKEND_URL=https://friendly-elegance-production-0e93.up.railway.app"
+Environment="DEVICE_NAME=RPI-MONITOR-01"
+Environment="DEVICE_TYPE=gateway"
+Environment="DEVICE_LOCATION=Server Room A"
+Environment="TELEMETRY_INTERVAL=10"
+
+StandardOutput=append:/var/log/iot_agent.log
+StandardError=append:/var/log/iot_agent.log
+
+[Install]
+WantedBy=multi-user.target

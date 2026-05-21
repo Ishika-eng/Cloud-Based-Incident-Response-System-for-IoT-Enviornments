@@ -1,18 +1,56 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Card from '../ui/Card';
+import { getIncidents } from '../../services/api';
 
-const data = [
-    { name: 'Mon', total: 400, critical: 24 },
-    { name: 'Tue', total: 300, critical: 13 },
-    { name: 'Wed', total: 550, critical: 48 },
-    { name: 'Thu', total: 200, critical: 8 },
-    { name: 'Fri', total: 278, critical: 39 },
-    { name: 'Sat', total: 189, critical: 4 },
-    { name: 'Sun', total: 239, critical: 12 },
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+// JS getDay() returns 0=Sunday; convert to Mon-based index (0=Mon … 6=Sun)
+const toMondayIndex = (date) => (date.getDay() + 6) % 7;
+
+const buildTrendData = (incidents) => {
+    const totals = Array(7).fill(0);
+    const criticals = Array(7).fill(0);
+
+    incidents.forEach((inc) => {
+        const idx = toMondayIndex(new Date(inc.timestamp));
+        totals[idx]++;
+        if ((inc.severity || '').toLowerCase() === 'critical') {
+            criticals[idx]++;
+        }
+    });
+
+    return DAY_LABELS.map((name, i) => ({
+        name,
+        total: totals[i],
+        critical: criticals[i],
+    }));
+};
+
+const FALLBACK_DATA = [
+    { name: 'Mon', total: 0, critical: 0 },
+    { name: 'Tue', total: 0, critical: 0 },
+    { name: 'Wed', total: 0, critical: 0 },
+    { name: 'Thu', total: 0, critical: 0 },
+    { name: 'Fri', total: 0, critical: 0 },
+    { name: 'Sat', total: 0, critical: 0 },
+    { name: 'Sun', total: 0, critical: 0 },
 ];
 
 const TrendChart = () => {
+    const [data, setData] = useState(FALLBACK_DATA);
+
+    useEffect(() => {
+        getIncidents({})
+            .then((res) => {
+                const incidents = res.data || [];
+                if (incidents.length) {
+                    setData(buildTrendData(incidents));
+                }
+            })
+            .catch(() => {/* keep fallback */});
+    }, []);
+
     return (
         <Card className="h-full flex flex-col">
             <div className="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between shrink-0">
