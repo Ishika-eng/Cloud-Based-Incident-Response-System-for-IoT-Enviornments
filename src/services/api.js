@@ -57,6 +57,8 @@ const normalizeDevice = (d) => ({
     firmwareVersion: d.firmwareVersion || 'v1.0.0',
     uptimeDays: d.uptimeDays || 0,
     totalIncidents: d.unresolvedIncidents || d.totalIncidents || 0,
+    latestSensorData: d.latestSensorData || null,
+    latestSensorTimestamp: d.latestSensorTimestamp || null,
 });
 
 // ─── Normalize backend incident to frontend shape ──────────────────────────────

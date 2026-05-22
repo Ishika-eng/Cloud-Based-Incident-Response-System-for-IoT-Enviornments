@@ -122,8 +122,13 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    // Update device lastSeen, handling concurrency
-    await Device.findByIdAndUpdate(device._id, { lastSeen: new Date() });
+    // Update device lastSeen and latest sensor data
+    const deviceUpdate = { lastSeen: new Date() };
+    if (telemetry.sensorData && Object.keys(telemetry.sensorData).length > 0) {
+      deviceUpdate.latestSensorData      = telemetry.sensorData;
+      deviceUpdate.latestSensorTimestamp = new Date();
+    }
+    await Device.findByIdAndUpdate(device._id, deviceUpdate);
 
     const threats = await new SecurityEngine().analyzeTelemetry(telemetry, device);
 
