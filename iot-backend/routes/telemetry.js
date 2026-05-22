@@ -84,6 +84,8 @@ router.post('/', auth, async (req, res) => {
 
     const { telemetry, isStandardFormat } = parseTelemetry(req);
 
+    console.log(`[TELEMETRY] Device=${device?.name} format=${isStandardFormat ? 'standard' : 'legacy'} cpu=${telemetry.cpu} memory=${telemetry.memory} traffic=${telemetry.traffic} loginStatus=${telemetry.loginStatus}`);
+
     if (isStandardFormat) {
       const validationErrors = validateStandardTelemetry(body);
       if (validationErrors.length > 0) {
