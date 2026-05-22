@@ -30,7 +30,7 @@ const PacketsChart = () => {
         if (chartData.length < 60) {
             const now = Date.now();
             const fillers = Array.from({ length: 60 - chartData.length }).map((_, i) => ({
-                time: format(new Date(now - (60 - i) * 2000), 'HH:mm:ss'),
+                time: safeFormat(new Date(now - (60 - i) * 2000), 'HH:mm:ss', '--:--:--'),
                 value: Math.floor(Math.random() * 500) + 200
             }));
             chartData = [...fillers, ...chartData];
