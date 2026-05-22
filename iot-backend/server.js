@@ -78,6 +78,12 @@ app.get('/debug/baseline/:deviceId?', (req, res) => {
   res.json({ devicesInCache: engine.deviceStateCache.size, baselines: all });
 });
 
+// GET /debug/correlation — shows the sliding event window
+app.get('/debug/correlation', (req, res) => {
+  const { correlationEngine } = require('./CorrelationEngine');
+  res.json(correlationEngine.getStatus());
+});
+
 app.get('/health', (req, res) => {
   const dbStatus = mongoose.connection.readyState;
   const dbStatusText = {

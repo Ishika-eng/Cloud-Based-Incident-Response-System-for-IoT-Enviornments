@@ -4,6 +4,7 @@ const Incident = require('../models/Incident');
 const auth = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
 const SecurityEngine = require('../SecurityEngine');
+const { correlationEngine } = require('../CorrelationEngine');
 
 const router = express.Router();
 
@@ -142,6 +143,15 @@ router.post('/', auth, async (req, res) => {
     }
 
     const threats = await new SecurityEngine().analyzeTelemetry(telemetry, device);
+
+    // Cross-device correlation — runs AFTER per-device analysis
+    // Checks if this device's threats form a pattern with other devices
+    const correlatedThreats = correlationEngine.analyze(device, threats);
+    if (correlatedThreats.length > 0) {
+      console.log(`[CORRELATION] ${correlatedThreats.length} cross-device pattern(s) detected involving ${device.name}`);
+      correlatedThreats.forEach(t => console.log(`  → ${t.type}: ${t.details.substring(0, 100)}`));
+      threats.push(...correlatedThreats);
+    }
 
     const incidents = [];
     let deviceCompromised = false;
