@@ -32,8 +32,10 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Only logout user session for 401s that aren't the register endpoint
-            if (!error.config?.url?.includes('/auth/register')) {
+            const url = error.config?.url || '';
+            // Don't log out for device-level endpoints — only for user session calls
+            const isSilent = url.includes('/auth/register') || url.includes('/api/telemetry');
+            if (!isSilent) {
                 _logout();
             }
         }

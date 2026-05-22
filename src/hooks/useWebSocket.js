@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useContext, useRef, createContext } from 'react';
 import { io } from 'socket.io-client';
 import { mockDevices } from '../services/mockData';
 import { SEVERITY } from '../constants/severity';
@@ -15,7 +15,12 @@ const SOCKET_EVENTS = {
 
 export { SOCKET_EVENTS };
 
-export const useWebSocket = () => {
+// ── Singleton WebSocket context ───────────────────────────────────────────────
+// All dashboard components share ONE socket connection instead of each creating
+// their own. Prevents the 5-socket explosion and the [alertContext] re-render loop.
+export const WebSocketContext = createContext(null);
+
+export const WebSocketProvider = ({ children }) => {
     const [isConnected, setIsConnected] = useState(false);
     const [lastThreat, setLastThreat] = useState(null);
     const [liveFeedEntries, setLiveFeedEntries] = useState([]);
@@ -23,10 +28,16 @@ export const useWebSocket = () => {
     const [compromisedDevice, setCompromisedDevice] = useState(null);
     const [resolvedIncident, setResolvedIncident] = useState(null);
     const [liveMetrics, setLiveMetrics] = useState({ cpu: 0, ram: 0, packets: 0 });
-    // Map of deviceId → latest sensor reading
     const [sensorReadings, setSensorReadings] = useState({});
 
+    // Use a ref for alertContext so we never put it in the effect dep array.
+    // The ref always points to the latest context value without triggering reconnects.
     const alertContext = useContext(AlertContext);
+    const alertContextRef = useRef(alertContext);
+    useEffect(() => {
+        alertContextRef.current = alertContext;
+    }, [alertContext]);
+
     const socketRef = useRef(null);
 
     useEffect(() => {
@@ -67,8 +78,9 @@ export const useWebSocket = () => {
                 setLiveFeedEntries((prev) => [entry, ...prev].slice(0, 150));
                 setLastThreat({ ...data, type: data.threatType });
 
-                if (alertContext) {
-                    alertContext.addNotification({
+                // Use ref — never re-creates the socket when notifications change
+                if (alertContextRef.current) {
+                    alertContextRef.current.addNotification({
                         ...entry,
                         message: `Threat detected on ${entry.deviceName}: ${entry.eventType}`,
                     });
@@ -79,8 +91,8 @@ export const useWebSocket = () => {
                 console.warn('[ThreatNest] DEVICE COMPROMISED:', data);
                 setCompromisedDevice(data);
 
-                if (alertContext) {
-                    alertContext.addCriticalAlert({
+                if (alertContextRef.current) {
+                    alertContextRef.current.addCriticalAlert({
                         id: data.alertId,
                         deviceName: data.device?.name || data.deviceId,
                         type: data.threatType || 'System Compromised',
@@ -90,7 +102,6 @@ export const useWebSocket = () => {
                     });
                 }
 
-                // Also push into live feed
                 const entry = {
                     id: `compromised-${Date.now()}`,
                     deviceId: data.deviceId,
@@ -101,19 +112,21 @@ export const useWebSocket = () => {
                     packetsPerSecond: 9999,
                 };
                 setLiveFeedEntries((prev) => [entry, ...prev].slice(0, 150));
-
-                // Update device status
                 setDeviceStatusUpdates({ type: 'compromised', device: { ...data.device, status: 'Blocked' } });
             });
 
             socket.on(SOCKET_EVENTS.LIVE_TELEMETRY, (data) => {
+                const ts = data.timestamp
+                    ? (typeof data.timestamp === 'string' ? data.timestamp : new Date(data.timestamp).toISOString())
+                    : new Date().toISOString();
+
                 const entry = {
                     id: `tel-${Date.now()}-${Math.random()}`,
                     deviceId: data.deviceId,
                     deviceName: data.device?.name || data.deviceId,
                     eventType: data.type || 'heartbeat',
                     severity: data.incidents?.length > 0 ? 'high' : 'low',
-                    timestamp: data.timestamp || new Date().toISOString(),
+                    timestamp: ts,
                     packetsPerSecond: data.data?.packetFrequency ?? Math.floor(Math.random() * 1000),
                     cpuLoad: data.data?.cpuUsage ?? 0,
                     memoryUsage: data.data?.ramUsage ?? 0,
@@ -126,7 +139,6 @@ export const useWebSocket = () => {
                     packets: data.data?.packetFrequency ?? 0,
                 });
 
-                // Capture sensor readings if this packet has sensorData
                 const sensor = data.data?.sensorData;
                 if (sensor && Object.keys(sensor).length > 0) {
                     setSensorReadings((prev) => ({
@@ -200,12 +212,12 @@ export const useWebSocket = () => {
 
                 setLastThreat(threat);
 
-                if (alertContext) {
+                if (alertContextRef.current) {
                     if (isCritical) {
-                        alertContext.addCriticalAlert({ ...threat, message: 'CRITICAL THREAT DETECTED' });
+                        alertContextRef.current.addCriticalAlert({ ...threat, message: 'CRITICAL THREAT DETECTED' });
                         setCompromisedDevice({ device: randomDevice, alertId: threat.id, threatType: threat.type });
                     }
-                    alertContext.addNotification({ ...threat, message: `New threat on ${threat.deviceName}` });
+                    alertContextRef.current.addNotification({ ...threat, message: `New threat on ${threat.deviceName}` });
                 }
             }, 45000);
 
@@ -214,9 +226,9 @@ export const useWebSocket = () => {
                 clearInterval(threatInterval);
             };
         }
-    }, [alertContext]);
+    }, []); // ← empty dep array: socket is created ONCE and never torn down due to state changes
 
-    return {
+    const value = {
         isConnected,
         lastThreat,
         liveFeedEntries,
@@ -227,4 +239,17 @@ export const useWebSocket = () => {
         sensorReadings,
         socket: socketRef.current,
     };
+
+    return (
+        <WebSocketContext.Provider value={value}>
+            {children}
+        </WebSocketContext.Provider>
+    );
+};
+
+// ── Hook for consuming components ─────────────────────────────────────────────
+export const useWebSocket = () => {
+    const ctx = useContext(WebSocketContext);
+    if (!ctx) throw new Error('useWebSocket must be used inside <WebSocketProvider>');
+    return ctx;
 };

@@ -22,10 +22,11 @@ const PacketsChart = () => {
     const { liveFeedEntries, liveMetrics } = useLiveFeed();
 
     const data = useMemo(() => {
-        let chartData = [...liveFeedEntries].slice(0, 60).reverse().map(e => ({
-            time: format(new Date(e.timestamp), 'HH:mm:ss'),
-            value: e.packetsPerSecond ?? liveMetrics.packets
-        }));
+        let chartData = [...liveFeedEntries].slice(0, 60).reverse().map(e => {
+            const d = new Date(e.timestamp);
+            const time = isNaN(d.getTime()) ? '--:--:--' : format(d, 'HH:mm:ss');
+            return { time, value: e.packetsPerSecond ?? liveMetrics.packets };
+        });
 
         if (chartData.length < 60) {
             const now = Date.now();
