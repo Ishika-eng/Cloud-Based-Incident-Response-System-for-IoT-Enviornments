@@ -33,10 +33,10 @@ const DeviceCard = ({ deviceId, reading }) => {
         return () => clearInterval(t);
     }, []);
 
-    const temp     = reading.temperature;
-    const humidity = reading.humidity;
-    const gas      = reading.gasValue;
-    const motion   = reading.motion;
+    const temp          = reading.temperature;
+    const humidity      = reading.humidity;
+    const gas           = reading.gasValue;
+    const motionDetected = reading.motion;
 
     const tempColour = temp > 40 ? 'var(--critical)' : temp > 35 ? '#d29922' : 'var(--chart-1)';
     const gasColour  = gas  > 2000 ? 'var(--critical)' : gas > 1500 ? '#d29922' : 'var(--text-primary)';
@@ -68,13 +68,13 @@ const DeviceCard = ({ deviceId, reading }) => {
             {temp     !== undefined && <SensorRow icon={Thermometer} label="Temperature" value={typeof temp === 'number' ? temp.toFixed(1) : temp} unit="°C" colour={tempColour} />}
             {humidity !== undefined && <SensorRow icon={Droplets}    label="Humidity"    value={typeof humidity === 'number' ? humidity.toFixed(1) : humidity} unit="%" colour="var(--chart-2, #60a5fa)" />}
             {gas      !== undefined && <SensorRow icon={Wind}        label="Gas Level"   value={gas}    unit="" colour={gasColour} />}
-            {motion   !== undefined && (
+            {motionDetected !== undefined && (
                 <SensorRow
-                    icon={motion ? Eye : EyeOff}
+                    icon={motionDetected ? Eye : EyeOff}
                     label="Motion"
-                    value={motion ? 'Detected' : 'Clear'}
+                    value={motionDetected ? 'Detected' : 'Clear'}
                     unit=""
-                    colour={motion ? '#d29922' : 'var(--text-secondary)'}
+                    colour={motionDetected ? '#d29922' : 'var(--text-secondary)'}
                 />
             )}
         </motion.div>
