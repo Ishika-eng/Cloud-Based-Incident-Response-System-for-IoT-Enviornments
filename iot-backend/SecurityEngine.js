@@ -1,4 +1,5 @@
 const Incident = require('./models/Incident');
+const { mlDetector } = require('./MLAnomalyDetector');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Module-level cache — shared across all SecurityEngine instances.
@@ -79,8 +80,9 @@ class SecurityEngine {
         b.calibrated = true;
         b.samples    = []; // Free memory — no longer needed
         console.log(`[EMA] Baseline calibrated for metric="${metric}": mean=${b.mean.toFixed(2)}, stdDev=${b.stdDev.toFixed(2)}, threshold=${(b.mean + 3*b.stdDev).toFixed(2)}`);
-      } else {
-        console.log(`[EMA] Calibrating metric="${metric}": ${b.samples.length}/${CALIBRATION_SAMPLES} samples, latest=${value}`);
+      } else if (b.samples.length === 1 || b.samples.length % 5 === 0) {
+        // Log only at start and every 5 samples to reduce noise
+        console.log(`[EMA] Calibrating metric="${metric}": ${b.samples.length}/${CALIBRATION_SAMPLES} samples`);
       }
 
       return { calibrated: false, zScore: 0, isAnomaly: false };
@@ -265,6 +267,38 @@ class SecurityEngine {
         }
       } else {
         // Still calibrating — collect samples silently.
+      }
+    }
+
+    // ── 7. ML Isolation Forest — Multivariate Anomaly Detection ─────────
+    // Runs AFTER all individual checks. Catches slow-burn attacks and
+    // unusual metric *combinations* that z-score misses (e.g. cpu=50%
+    // looks normal alone, but cpu=50% + traffic=8000 + memory=88% together
+    // is statistically impossible for this device's normal behaviour).
+    if (deviceKey) {
+      const mlResult = mlDetector.analyze(deviceKey, telemetry);
+
+      if (mlResult.phase === 'calibrating') {
+        // Silent — log only milestones
+        if (mlResult.samplesCollected === 1 || mlResult.samplesCollected % 10 === 0) {
+          console.log(`[ML] Device ${deviceKey} calibrating: ${mlResult.samplesCollected}/${mlResult.samplesNeeded} samples`);
+        }
+      } else if (mlResult.phase === 'calibrated' && mlResult.isAnomaly) {
+        // Only raise ML alert if z-score checks didn't already catch it
+        // (avoids duplicate alerts for the same event)
+        const alreadyCaught = threats.some(t =>
+          t.type === 'DDoS' || t.type === 'Anomaly'
+        );
+
+        if (!alreadyCaught) {
+          threats.push({
+            type:     'Anomaly',
+            severity: 'High',
+            details:  `ML Isolation Forest: Multivariate anomaly detected (score=${mlResult.score}). ` +
+                      `Unusual combination of metrics: ${JSON.stringify(mlResult.features)}. ` +
+                      `This pattern is statistically impossible given this device's learned behaviour.`
+          });
+        }
       }
     }
 

@@ -57,19 +57,23 @@ app.use('/api/devices', deviceRoutes);
 // GET /debug/baseline/:id      → one specific device
 app.get('/debug/baseline/:deviceId?', (req, res) => {
   const SecurityEngine = require('./SecurityEngine');
+  const { mlDetector }  = require('./MLAnomalyDetector');
   const engine = new SecurityEngine();
 
   if (req.params.deviceId) {
     return res.json({
-      deviceId: req.params.deviceId,
-      ...engine.getBaselineStatus(req.params.deviceId)
+      deviceId:  req.params.deviceId,
+      ema:       engine.getBaselineStatus(req.params.deviceId),
+      ml:        mlDetector.getStatus(req.params.deviceId),
     });
   }
 
-  // Return all devices in the cache
   const all = {};
   for (const [id] of engine.deviceStateCache) {
-    all[id] = engine.getBaselineStatus(id);
+    all[id] = {
+      ema: engine.getBaselineStatus(id),
+      ml:  mlDetector.getStatus(id),
+    };
   }
   res.json({ devicesInCache: engine.deviceStateCache.size, baselines: all });
 });
