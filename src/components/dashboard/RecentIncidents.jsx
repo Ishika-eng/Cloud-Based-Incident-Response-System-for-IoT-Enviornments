@@ -5,7 +5,7 @@ import Card from '../ui/Card';
 import DataTable from '../ui/DataTable';
 import { TextBadge } from '../ui/Badge';
 import { SEVERITY_COLORS } from '../../constants/severity';
-import { format } from 'date-fns';
+import { safeFormat } from '../../utils/dateFormat';
 import { ROUTES } from '../../constants/routes';
 import { useLiveFeed } from '../../hooks/useLiveFeed';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -60,7 +60,7 @@ const RecentIncidents = () => {
         {
             header: 'Time',
             accessor: 'timestamp',
-            render: (row) => <span className="font-mono text-11px text-[var(--text-muted)]">{format(new Date(row.timestamp), 'MMM dd, HH:mm')}</span>
+            render: (row) => <span className="font-mono text-11px text-[var(--text-muted)]">{safeFormat(row.timestamp, 'MMM dd, HH:mm')}</span>
         }
     ];
 

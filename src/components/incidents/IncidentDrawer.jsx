@@ -5,7 +5,7 @@ import Button from '../ui/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { resolveIncident, acknowledgeIncident } from '../../services/api';
 import { toast } from '../ui/Toast';
-import { format } from 'date-fns';
+import { safeFormat } from '../../utils/dateFormat';
 
 const IncidentDrawer = ({ incident, isOpen, onClose, onRefresh }) => {
     const { isAdmin } = useAuth();
@@ -90,7 +90,7 @@ const IncidentDrawer = ({ incident, isOpen, onClose, onRefresh }) => {
                                 </div>
                                 <div>
                                     <div className="text-11px text-[var(--text-muted)] mb-1">Timestamp</div>
-                                    <div className="text-13px text-[var(--text-primary)] font-mono">{format(new Date(incident.timestamp), 'MMM dd, HH:mm:ss')}</div>
+                                    <div className="text-13px text-[var(--text-primary)] font-mono">{safeFormat(incident.timestamp, 'MMM dd, HH:mm:ss')}</div>
                                 </div>
                             </div>
                         </div>
@@ -102,14 +102,14 @@ const IncidentDrawer = ({ incident, isOpen, onClose, onRefresh }) => {
                             <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                                 <div className="flex items-center justify-center w-[12px] h-[12px] rounded-full border-2 border-[var(--border-default)] bg-[var(--text-muted)] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow" />
                                 <div className="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] ml-4 md:ml-0">
-                                    <div className="text-11px font-mono text-[var(--text-muted)]">{format(new Date(incident.timestamp), 'HH:mm:ss')}</div>
+                                    <div className="text-11px font-mono text-[var(--text-muted)]">{safeFormat(incident.timestamp, 'HH:mm:ss')}</div>
                                     <div className="text-13px text-[var(--text-primary)]">Threat detected</div>
                                 </div>
                             </div>
                             <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                                 <div className="flex items-center justify-center w-[12px] h-[12px] rounded-full border-2 border-[var(--border-default)] bg-[var(--bg-surface)] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow" />
                                 <div className="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] ml-4 md:ml-0">
-                                    <div className="text-11px font-mono text-[var(--text-muted)]">{format(new Date(new Date(incident.timestamp).getTime() + 5000), 'HH:mm:ss')}</div>
+                                    <div className="text-11px font-mono text-[var(--text-muted)]">{safeFormat(new Date(new Date(incident.timestamp).getTime() + 5000), 'HH:mm:ss')}</div>
                                     <div className="text-13px text-[var(--text-primary)]">Automated analysis started</div>
                                 </div>
                             </div>

@@ -2,7 +2,7 @@ import React from 'react';
 import DataTable from '../ui/DataTable';
 import SeverityLabel from './SeverityLabel';
 import Button from '../ui/Button';
-import { format } from 'date-fns';
+import { safeFormat } from '../../utils/dateFormat';
 
 const IncidentTable = ({ incidents, selectedIds, onSelectionChange, onView }) => {
     const toggleAll = (e) => {
@@ -55,7 +55,7 @@ const IncidentTable = ({ incidents, selectedIds, onSelectionChange, onView }) =>
         {
             header: 'Timestamp',
             accessor: 'timestamp',
-            render: (row) => <span className="font-mono text-11px max-w-[120px] truncate block text-[var(--text-muted)]">{format(new Date(row.timestamp), 'MMM dd, HH:mm:ss')}</span>
+            render: (row) => <span className="font-mono text-11px max-w-[120px] truncate block text-[var(--text-muted)]">{safeFormat(row.timestamp, 'MMM dd, HH:mm:ss')}</span>
         },
         {
             header: 'Status',

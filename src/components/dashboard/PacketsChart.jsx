@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { format } from 'date-fns';
+import { safeFormat } from '../../utils/dateFormat';
 import Card from '../ui/Card';
 import { useLiveFeed } from '../../hooks/useLiveFeed';
 
@@ -22,11 +22,10 @@ const PacketsChart = () => {
     const { liveFeedEntries, liveMetrics } = useLiveFeed();
 
     const data = useMemo(() => {
-        let chartData = [...liveFeedEntries].slice(0, 60).reverse().map(e => {
-            const d = new Date(e.timestamp);
-            const time = isNaN(d.getTime()) ? '--:--:--' : format(d, 'HH:mm:ss');
-            return { time, value: e.packetsPerSecond ?? liveMetrics.packets };
-        });
+        let chartData = [...liveFeedEntries].slice(0, 60).reverse().map(e => ({
+            time: safeFormat(e.timestamp, 'HH:mm:ss', '--:--:--'),
+            value: e.packetsPerSecond ?? liveMetrics.packets,
+        }));
 
         if (chartData.length < 60) {
             const now = Date.now();

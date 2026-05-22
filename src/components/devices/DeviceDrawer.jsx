@@ -7,7 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { DEVICE_STATUS } from '../../constants/deviceTypes';
 import { blockDevice, unblockDevice, getIncidents, getDeviceTelemetry } from '../../services/api';
 import { toast } from '../ui/Toast';
-import { format } from 'date-fns';
+import { safeFormat } from '../../utils/dateFormat';
 
 const DeviceDrawer = ({ device, isOpen, onClose, onRefresh }) => {
     const { isAdmin } = useAuth();
@@ -97,7 +97,7 @@ const DeviceDrawer = ({ device, isOpen, onClose, onRefresh }) => {
                             </div>
                             <div>
                                 <div className="text-11px text-[var(--text-muted)] mb-1">Last Seen</div>
-                                <div className="text-13px text-[var(--text-primary)] font-mono">{format(new Date(device.lastSeen), 'MMM dd, HH:mm:ss')}</div>
+                                <div className="text-13px text-[var(--text-primary)] font-mono">{safeFormat(device.lastSeen, 'MMM dd, HH:mm:ss')}</div>
                             </div>
                         </div>
                     </section>
@@ -113,7 +113,7 @@ const DeviceDrawer = ({ device, isOpen, onClose, onRefresh }) => {
                                         <YAxis domain={[0, 100]} hide />
                                         <Tooltip
                                             contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: 0, fontSize: 11, fontFamily: 'monospace' }}
-                                            labelFormatter={(val) => format(new Date(val), 'HH:mm')}
+                                            labelFormatter={(val) => safeFormat(val, 'HH:mm')}
                                             formatter={(val, name) => [`${Math.round(val)}%`, name.toUpperCase()]}
                                         />
                                         <Line type="monotone" dataKey="cpu" stroke="#00ff41" strokeWidth={1.5} dot={false} name="CPU" />
@@ -146,7 +146,7 @@ const DeviceDrawer = ({ device, isOpen, onClose, onRefresh }) => {
                                     <div key={inc.id} className="p-3 bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-[6px] flex flex-col gap-1.5 hover:border-[var(--border-muted)] transition-colors">
                                         <div className="flex justify-between items-start">
                                             <span className="text-13px font-medium text-[var(--text-primary)]">{inc.type}</span>
-                                            <span className="text-11px font-mono text-[var(--text-muted)]">{format(new Date(inc.timestamp), 'MMM dd')}</span>
+                                            <span className="text-11px font-mono text-[var(--text-muted)]">{safeFormat(inc.timestamp, 'MMM dd')}</span>
                                         </div>
                                         <div className="text-11px text-[var(--text-secondary)] truncate">{inc.description}</div>
                                     </div>

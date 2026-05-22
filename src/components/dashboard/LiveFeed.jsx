@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLiveFeed } from '../../hooks/useLiveFeed';
-import { format } from 'date-fns';
+import { safeFormat } from '../../utils/dateFormat';
 import { StatusDot } from '../ui/Badge';
 import { SEVERITY_COLORS } from '../../constants/severity';
 import Card from '../ui/Card';
@@ -45,7 +45,7 @@ const LiveFeed = () => {
                                         <div className="flex justify-between items-baseline mb-0.5 gap-2">
                                             <span className="text-[var(--text-primary)] font-medium text-11px truncate hover-glitch cursor-crosshair">{entry.deviceName}</span>
                                             <span className="font-mono text-[var(--text-muted)] text-[10px] whitespace-nowrap group-hover:text-[var(--text-secondary)] transition-colors shrink-0">
-                                                {format(new Date(entry.timestamp), 'HH:mm:ss')}
+                                                {safeFormat(entry.timestamp, 'HH:mm:ss')}
                                             </span>
                                         </div>
                                         <div className="text-[var(--text-secondary)] text-11px truncate">

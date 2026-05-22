@@ -2,7 +2,7 @@ import React from 'react';
 import DataTable from '../ui/DataTable';
 import DeviceStatusDot from './DeviceStatusDot';
 import Button from '../ui/Button';
-import { format } from 'date-fns';
+import { safeFormat } from '../../utils/dateFormat';
 
 const DeviceTable = ({ devices, onView }) => {
     const columns = [
@@ -26,7 +26,7 @@ const DeviceTable = ({ devices, onView }) => {
         {
             header: 'Last Seen',
             accessor: 'lastSeen',
-            render: (row) => <span className="font-mono text-11px max-w-[120px] truncate block">{format(new Date(row.lastSeen), 'MMM dd, HH:mm')}</span>
+            render: (row) => <span className="font-mono text-11px max-w-[120px] truncate block">{safeFormat(row.lastSeen, 'MMM dd, HH:mm')}</span>
         },
         {
             header: 'Incidents',

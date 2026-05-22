@@ -3,7 +3,7 @@ import { AlertContext } from '../../context/AlertContext';
 import { CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
-import { formatDistanceToNow } from 'date-fns';
+import { safeDistanceToNow } from '../../utils/dateFormat';
 import { StatusDot } from '../ui/Badge';
 import { SEVERITY_COLORS } from '../../constants/severity';
 
@@ -52,7 +52,7 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-baseline mb-0.5">
                                             <span className="font-bold text-[11px] text-[var(--text-primary)] truncate pr-2 font-mono">{notif.deviceName}</span>
-                                            <span className="text-[10px] text-[var(--text-muted)] whitespace-nowrap shrink-0">{formatDistanceToNow(new Date(notif.timestamp), { addSuffix: true })}</span>
+                                            <span className="text-[10px] text-[var(--text-muted)] whitespace-nowrap shrink-0">{safeDistanceToNow(notif.timestamp)}</span>
                                         </div>
                                         <p className="text-[11px] text-[var(--text-secondary)] line-clamp-2 leading-snug">
                                             {notif.message || notif.description}

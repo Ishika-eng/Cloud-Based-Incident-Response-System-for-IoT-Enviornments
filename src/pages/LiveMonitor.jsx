@@ -4,7 +4,7 @@ import {
     AreaChart, Area, LineChart, Line, XAxis, YAxis,
     CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { format } from 'date-fns';
+import { safeFormat } from '../utils/dateFormat';
 import {
     Activity, Cpu, MemoryStick, Wifi, ShieldAlert, X,
     CheckCircle, Database, Server, Zap, AlertTriangle
@@ -22,7 +22,7 @@ const useRollingData = (value, label, max = MAX_POINTS) => {
     );
     useEffect(() => {
         setSeries(prev => {
-            const next = [...prev.slice(1), { t: format(new Date(), 'HH:mm:ss'), v: value }];
+            const next = [...prev.slice(1), { t: safeFormat(new Date(), 'HH:mm:ss'), v: value }];
             return next;
         });
     }, [value]);
@@ -392,7 +392,7 @@ const LiveMonitor = () => {
                                                             {entry.deviceName}
                                                         </span>
                                                         <span className="font-mono text-[9px] text-[#52525b] ml-2 whitespace-nowrap group-hover:text-[#8b949e] transition-colors">
-                                                            {format(new Date(entry.timestamp), 'HH:mm:ss')}
+                                                            {safeFormat(entry.timestamp, 'HH:mm:ss')}
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between items-center">

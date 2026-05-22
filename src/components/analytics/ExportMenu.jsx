@@ -3,7 +3,7 @@ import Button from '../ui/Button';
 import { Download } from 'lucide-react';
 import { toast } from '../ui/Toast';
 import { getIncidents } from '../../services/api';
-import { format } from 'date-fns';
+import { safeFormat } from '../../utils/dateFormat';
 
 const ExportMenu = () => {
     const [isExporting, setIsExporting] = useState(false);
@@ -31,7 +31,7 @@ const ExportMenu = () => {
                 `"${inc.title}"`,
                 inc.severity,
                 inc.status,
-                format(new Date(inc.timestamp), 'yyyy-MM-dd HH:mm:ss')
+                safeFormat(inc.timestamp, 'yyyy-MM-dd HH:mm:ss')
             ]);
 
             // Generate CSV string
@@ -45,7 +45,7 @@ const ExportMenu = () => {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.setAttribute('href', url);
-            link.setAttribute('download', `threatnest_export_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
+            link.setAttribute('download', `threatnest_export_${safeFormat(new Date(), 'yyyyMMdd_HHmm')}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
