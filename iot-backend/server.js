@@ -32,6 +32,7 @@ io.on('connection', (socket) => {
   });
 });
 
+app.set('trust proxy', 1); // Railway sits behind a reverse proxy
 app.use(cors());
 app.use(express.json());
 
@@ -41,6 +42,8 @@ const telemetryLimiter = rateLimit({
   message: { error: 'Too many telemetry requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
+  // Railway runs behind a proxy — trust the X-Forwarded-For header
+  validate: { xForwardedForHeader: false },
 });
 
 app.use('/api/telemetry', telemetryLimiter);
