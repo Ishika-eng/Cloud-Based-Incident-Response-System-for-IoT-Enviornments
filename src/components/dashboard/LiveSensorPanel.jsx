@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Thermometer, Droplets, Wind, Eye, EyeOff, Activity } from 'lucide-react';
 import Card from '../ui/Card';
 import { useLiveFeed } from '../../hooks/useLiveFeed';
-import { getDevices } from '../../services/api';
+import { getSensorLatest } from '../../services/api';
 
 const secondsAgo = (iso) => {
     if (!iso) return '';
@@ -86,24 +86,16 @@ const LiveSensorPanel = () => {
     // Local state — seeded from REST on mount, then updated by Socket.IO
     const [readings, setReadings] = useState({});
 
-    // On mount: load last known sensor data from /api/devices
+    // On mount: load latest sensor readings from in-memory backend cache
     useEffect(() => {
-        getDevices().then((res) => {
-            const devices = res.data || [];
+        getSensorLatest().then((res) => {
+            const sensors = res.data || [];
+            if (sensors.length === 0) return;
             const initial = {};
-            devices.forEach((d) => {
-                if (d.latestSensorData && Object.keys(d.latestSensorData).length > 0) {
-                    initial[d.id] = {
-                        deviceName:  d.name,
-                        location:    d.location,
-                        ...d.latestSensorData,
-                        lastUpdated: d.latestSensorTimestamp || d.lastSeen,
-                    };
-                }
+            sensors.forEach((s) => {
+                initial[s.deviceId] = s;
             });
-            if (Object.keys(initial).length > 0) {
-                setReadings(initial);
-            }
+            setReadings(initial);
         }).catch(() => {});
     }, []);
 

@@ -57,8 +57,6 @@ const normalizeDevice = (d) => ({
     firmwareVersion: d.firmwareVersion || 'v1.0.0',
     uptimeDays: d.uptimeDays || 0,
     totalIncidents: d.unresolvedIncidents || d.totalIncidents || 0,
-    latestSensorData: d.latestSensorData || null,
-    latestSensorTimestamp: d.latestSensorTimestamp || null,
 });
 
 // ─── Normalize backend incident to frontend shape ──────────────────────────────
@@ -232,6 +230,16 @@ export const getDeviceTelemetry = async (id, range = '7d') => {
             network: Math.max(0, Math.min(100, baseLoad * 0.8 + Math.cos(i * 0.4) * 15 + (Math.random() - 0.5) * 10)),
         })),
     };
+};
+
+// ─── Live Sensor Cache (in-memory backend, no MongoDB) ────────────────────────
+export const getSensorLatest = async () => {
+    try {
+        const res = await api.get('/api/telemetry/sensors/latest');
+        return { data: res.data.sensors || [] };
+    } catch {
+        return { data: [] };
+    }
 };
 
 // ─── Incidents ────────────────────────────────────────────────────────────────

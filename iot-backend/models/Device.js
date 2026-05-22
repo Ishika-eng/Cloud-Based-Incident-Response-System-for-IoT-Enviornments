@@ -41,14 +41,6 @@ const deviceSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
-  },
-  latestSensorData: {
-    type: Object,
-    default: null
-  },
-  latestSensorTimestamp: {
-    type: Date,
-    default: null
   }
 }, {
   timestamps: true

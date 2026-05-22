@@ -7,6 +7,10 @@ const SecurityEngine = require('../SecurityEngine');
 
 const router = express.Router();
 
+// In-memory sensor cache — no MongoDB writes, lives only in server process
+// deviceId → { deviceName, location, temperature, humidity, gasValue, motion, lastUpdated }
+const sensorCache = new Map();
+
 const parseTelemetry = (req) => {
   const body = req.body;
 
@@ -122,13 +126,20 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    // Update device lastSeen and latest sensor data
-    const deviceUpdate = { lastSeen: new Date() };
-    if (telemetry.sensorData && Object.keys(telemetry.sensorData).length > 0) {
-      deviceUpdate.latestSensorData      = telemetry.sensorData;
-      deviceUpdate.latestSensorTimestamp = new Date();
+    // Update device lastSeen only — sensor data is NOT stored in MongoDB
+    await Device.findByIdAndUpdate(device._id, { lastSeen: new Date() });
+
+    // Cache latest sensor readings in memory (no DB write)
+    const sensor = telemetry.sensorData;
+    if (sensor && Object.keys(sensor).length > 0) {
+      sensorCache.set(String(device._id), {
+        deviceId:   String(device._id),
+        deviceName: device.name,
+        location:   device.location,
+        ...sensor,
+        lastUpdated: new Date().toISOString(),
+      });
     }
-    await Device.findByIdAndUpdate(device._id, deviceUpdate);
 
     const threats = await new SecurityEngine().analyzeTelemetry(telemetry, device);
 
@@ -361,6 +372,17 @@ router.get('/status', auth, async (req, res) => {
   } catch (error) {
     console.error('Device status retrieval error:', error);
     res.status(500).json({ error: 'Server error retrieving device status' });
+  }
+});
+
+// GET /api/telemetry/sensors/latest — returns in-memory sensor cache (no MongoDB)
+router.get('/sensors/latest', auth, async (req, res) => {
+  try {
+    const readings = Array.from(sensorCache.values());
+    res.json({ sensors: readings });
+  } catch (error) {
+    console.error('Sensor cache retrieval error:', error);
+    res.status(500).json({ error: 'Server error retrieving sensor data' });
   }
 });
 
