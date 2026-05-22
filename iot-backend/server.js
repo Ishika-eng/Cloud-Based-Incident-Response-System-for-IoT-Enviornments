@@ -49,6 +49,28 @@ app.use('/api/telemetry', telemetryRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/devices', deviceRoutes);
 
+// ── Debug: show EMA baseline state for all devices ───────────────────────────
+// GET /debug/baseline          → all devices in cache
+// GET /debug/baseline/:id      → one specific device
+app.get('/debug/baseline/:deviceId?', (req, res) => {
+  const SecurityEngine = require('./SecurityEngine');
+  const engine = new SecurityEngine();
+
+  if (req.params.deviceId) {
+    return res.json({
+      deviceId: req.params.deviceId,
+      ...engine.getBaselineStatus(req.params.deviceId)
+    });
+  }
+
+  // Return all devices in the cache
+  const all = {};
+  for (const [id] of engine.deviceStateCache) {
+    all[id] = engine.getBaselineStatus(id);
+  }
+  res.json({ devicesInCache: engine.deviceStateCache.size, baselines: all });
+});
+
 app.get('/health', (req, res) => {
   const dbStatus = mongoose.connection.readyState;
   const dbStatusText = {

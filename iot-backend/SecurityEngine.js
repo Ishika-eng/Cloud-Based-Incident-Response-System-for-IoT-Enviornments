@@ -78,6 +78,9 @@ class SecurityEngine {
 
         b.calibrated = true;
         b.samples    = []; // Free memory — no longer needed
+        console.log(`[EMA] Baseline calibrated for metric="${metric}": mean=${b.mean.toFixed(2)}, stdDev=${b.stdDev.toFixed(2)}, threshold=${(b.mean + 3*b.stdDev).toFixed(2)}`);
+      } else {
+        console.log(`[EMA] Calibrating metric="${metric}": ${b.samples.length}/${CALIBRATION_SAMPLES} samples, latest=${value}`);
       }
 
       return { calibrated: false, zScore: 0, isAnomaly: false };
@@ -92,6 +95,10 @@ class SecurityEngine {
     const alpha = 0.02;
     b.mean   = b.mean   * (1 - alpha) + value   * alpha;
     b.stdDev = Math.max(0.5, b.stdDev * (1 - alpha) + Math.abs(value - b.mean) * alpha);
+
+    if (zScore > 2) {
+      console.log(`[EMA] metric="${metric}" value=${value}, zScore=${zScore.toFixed(2)}, mean=${b.mean.toFixed(2)}, stdDev=${b.stdDev.toFixed(2)}, ANOMALY=${zScore > 3}`);
+    }
 
     return {
       calibrated: true,
