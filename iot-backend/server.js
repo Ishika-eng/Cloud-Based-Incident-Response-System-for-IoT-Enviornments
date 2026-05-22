@@ -55,19 +55,21 @@ app.use('/api/devices', deviceRoutes);
 // ── Debug: show EMA baseline state for all devices ───────────────────────────
 // GET /debug/baseline          → all devices in cache
 // GET /debug/baseline/:id      → one specific device
-app.get('/debug/baseline/:deviceId?', (req, res) => {
+app.get('/debug/baseline/:deviceId', (req, res) => {
   const SecurityEngine = require('./SecurityEngine');
   const { mlDetector }  = require('./MLAnomalyDetector');
   const engine = new SecurityEngine();
+  return res.json({
+    deviceId:  req.params.deviceId,
+    ema:       engine.getBaselineStatus(req.params.deviceId),
+    ml:        mlDetector.getStatus(req.params.deviceId),
+  });
+});
 
-  if (req.params.deviceId) {
-    return res.json({
-      deviceId:  req.params.deviceId,
-      ema:       engine.getBaselineStatus(req.params.deviceId),
-      ml:        mlDetector.getStatus(req.params.deviceId),
-    });
-  }
-
+app.get('/debug/baseline', (req, res) => {
+  const SecurityEngine = require('./SecurityEngine');
+  const { mlDetector }  = require('./MLAnomalyDetector');
+  const engine = new SecurityEngine();
   const all = {};
   for (const [id] of engine.deviceStateCache) {
     all[id] = {
