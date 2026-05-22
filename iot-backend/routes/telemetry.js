@@ -198,7 +198,8 @@ router.post('/', auth, async (req, res) => {
           ramUsage: telemetry.memory,
           packetFrequency: telemetry.traffic,
           loginStatus: telemetry.loginStatus,
-          authHeader: telemetry.authHeader
+          authHeader: telemetry.authHeader,
+          sensorData: telemetry.sensorData || {}
         },
         device: {
           id: device._id,

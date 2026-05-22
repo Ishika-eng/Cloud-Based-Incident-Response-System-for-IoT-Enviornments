@@ -6,6 +6,7 @@ import PacketsChart from '../components/dashboard/PacketsChart';
 import RecentIncidents from '../components/dashboard/RecentIncidents';
 import SeverityBreakdown from '../components/dashboard/SeverityBreakdown';
 import DeviceStatusGrid from '../components/dashboard/DeviceStatusGrid';
+import LiveSensorPanel from '../components/dashboard/LiveSensorPanel';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -78,9 +79,18 @@ const Dashboard = () => {
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true, margin: '-30px' }}
                         transition={{ duration: 0.45, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                        className="flex-1 flex flex-col min-h-0"
                     >
                         <DeviceStatusGrid />
+                    </motion.div>
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true, margin: '-30px' }}
+                        transition={{ duration: 0.45, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                        className="flex-1 flex flex-col min-h-0"
+                        style={{ minHeight: '220px' }}
+                    >
+                        <LiveSensorPanel />
                     </motion.div>
                 </div>
             </div>

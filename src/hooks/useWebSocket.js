@@ -23,6 +23,8 @@ export const useWebSocket = () => {
     const [compromisedDevice, setCompromisedDevice] = useState(null);
     const [resolvedIncident, setResolvedIncident] = useState(null);
     const [liveMetrics, setLiveMetrics] = useState({ cpu: 0, ram: 0, packets: 0 });
+    // Map of deviceId → latest sensor reading
+    const [sensorReadings, setSensorReadings] = useState({});
 
     const alertContext = useContext(AlertContext);
     const socketRef = useRef(null);
@@ -123,6 +125,20 @@ export const useWebSocket = () => {
                     ram: data.data?.ramUsage ?? 0,
                     packets: data.data?.packetFrequency ?? 0,
                 });
+
+                // Capture sensor readings if this packet has sensorData
+                const sensor = data.data?.sensorData;
+                if (sensor && Object.keys(sensor).length > 0) {
+                    setSensorReadings((prev) => ({
+                        ...prev,
+                        [data.deviceId]: {
+                            deviceName: data.device?.name || data.deviceId,
+                            location:   data.device?.location || '',
+                            ...sensor,
+                            lastUpdated: new Date().toISOString(),
+                        },
+                    }));
+                }
             });
 
             socket.on(SOCKET_EVENTS.DEVICE_BLOCKED, (data) => {
@@ -208,6 +224,7 @@ export const useWebSocket = () => {
         compromisedDevice,
         resolvedIncident,
         liveMetrics,
+        sensorReadings,
         socket: socketRef.current,
     };
 };
