@@ -17,11 +17,17 @@ function getTransporter() {
   }
 
   transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host:   'smtp.gmail.com',
+    port:   587,
+    secure: false,   // STARTTLS on port 587 (not SSL on 465)
+    family: 4,       // force IPv4 — Railway blocks outbound IPv6 SMTP
     auth: {
       user: process.env.GMAIL_USER,
       pass: process.env.GMAIL_APP_PASSWORD,
     },
+    tls: {
+      rejectUnauthorized: false
+    }
   });
 
   console.log(`[EMAIL] Transporter ready — sending from ${process.env.GMAIL_USER} to ${process.env.ALERT_EMAIL || process.env.GMAIL_USER}`);
