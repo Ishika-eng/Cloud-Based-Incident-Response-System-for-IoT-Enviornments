@@ -24,6 +24,7 @@ function getTransporter() {
     },
   });
 
+  console.log(`[EMAIL] Transporter ready — sending from ${process.env.GMAIL_USER} to ${process.env.ALERT_EMAIL || process.env.GMAIL_USER}`);
   return transporter;
 }
 
@@ -44,6 +45,7 @@ const SEVERITY_COLOUR = {
  * @param {object} device    - Device document from MongoDB
  */
 async function sendCriticalAlert(incident, device) {
+  console.log(`[EMAIL] sendCriticalAlert called — type=${incident.type} severity=${incident.severity} device=${device.name}`);
   const mailer = getTransporter();
   if (!mailer) return;
 
