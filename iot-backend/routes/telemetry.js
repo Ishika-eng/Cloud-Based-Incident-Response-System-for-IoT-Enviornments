@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
 const SecurityEngine = require('../SecurityEngine');
 const { correlationEngine } = require('../CorrelationEngine');
+const { sendCriticalAlert } = require('../services/emailAlert');
 
 const router = express.Router();
 
@@ -170,6 +171,10 @@ router.post('/', auth, async (req, res) => {
 
       if (threat.severity === 'Critical') {
         deviceCompromised = true;
+        // Send email alert — fires async, failure won't affect telemetry response
+        sendCriticalAlert(incident, device).catch((err) =>
+          console.error('[EMAIL] Failed to send alert:', err.message)
+        );
       }
 
       if (global.io) {
